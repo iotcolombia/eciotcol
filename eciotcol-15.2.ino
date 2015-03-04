@@ -125,8 +125,6 @@ void CheckSensor(){
   }
   else
   {
-    digitalWrite(SENSOR_POWER, LOW); // Turn off IR Led
-
     sensorState = digitalRead(SENSOR_INPUT); // read IR sensor
     // Validate State Sensor
     if (sensorState == LOW) {
@@ -135,6 +133,7 @@ void CheckSensor(){
     else {
       digitalWrite(LED_PIN, HIGH);     // Turn On Led
     }
+    digitalWrite(SENSOR_POWER, LOW); // Turn off IR Led
   } 
 }
 
