@@ -30,33 +30,24 @@
 * more infos: http://blog.oscarliang.net
 */
 
-#define LED_PIN 13
-#define TimeOnSensor 10
+#define LED_PIN 13       // egg indicator pin
+#define SENSOR_POWER 12  // Sensor power pin (diode emitter)
+#define SENSOR_INPUT 11  // Sensor input pin (transistor colector)
 
-/**
- * Pin Power Sensor
- */
-#define SENSOR_POWER 12
-
-/**
- * Pin Input Sensor
- */
-#define SENSOR_INPUT 11
-
-#define  COUNT_500MS  25
-#define  COUNT_1S  50
-#define  COUNT_2S  100
-#define  COUNT_5S  250
-
-
+#define  SENSOR_TIME_ON  1  // duty cycle for emitter, equivalent to 1ms
+#define  SENSOR_PERIOD 20 // IR sensor period, equivalent to 20 ms
+#define  COUNT_500MS   25 // constant counter value to reach 500 ms
+#define  COUNT_1S  50    // constant counter value to reach 1 s
+#define  COUNT_2S  100   // constant counter value to reach 2 s
+#define  COUNT_5S  250   // constant counter value to reach 5 s 
 
 /*
  * Define Firmware Variables
  */
-bool flagSlow = true;  
-int count1ms = 0;   // 1 ms counter
-int countSlow = 0;    // 
-int sensorState;    // Sensor status
+int count1ms = 0;     // 1 ms counter
+int countSlow = 0;    // slow timer counter
+bool flagSlow = true; // slow tick counter flag  (for longer period)
+int sensorState = 0;  // Sensor status
 
 void setup()
 {
@@ -71,7 +62,6 @@ void setup()
   // It works very good at 19200, 38400,  57600 and 115200 bps
   Serial.begin(9600);
   while(!Serial){;}
-
   
   // initialize timer1 
   noInterrupts();           // disable all interrupts
@@ -95,7 +85,7 @@ ISR(TIMER1_COMPA_vect)
   // Add to this, the base tick will help to another time-based routines, for example,
   // periodical data  transmition.
   
-  if(count1ms < 20)
+  if(count1ms < SENSOR_PERIOD)
   {
     count1ms++;  // 1 ms increment 
   }
@@ -117,26 +107,29 @@ ISR(TIMER1_COMPA_vect)
 
 void loop()
 {
-// your program here...
-  CheckSensor();
-  Transmision();
-
+  CheckSensor();    // method for check if there's egg.
+  Transmision();    // method for sending message to host
 }
 
-
-
+/* CheckSensor()
+   this method replaces the use of delays to turning the IR Sensor on and off .
+   each 20 ms, the program checks for object presence or abscence (an egg for this project)
+   if there's egg, an auxiliar led is turned on and updates the sensorState variable.
+   otherwise, the auxiliar led is off and updates its status
+*/
 void CheckSensor(){
-   
-   
-  if(count1ms < TimeOnSensor)
+
+  if(count1ms < SENSOR_TIME_ON)
   {
     digitalWrite(SENSOR_POWER, HIGH); // Turn On IR Led
   }
   else
   {
+    digitalWrite(SENSOR_POWER, LOW); // Turn off IR Led
+
     sensorState = digitalRead(SENSOR_INPUT); // read IR sensor
     // Validate State Sensor
-    if (sensorState == HIGH) {
+    if (sensorState == LOW) {
       digitalWrite(LED_PIN, LOW);     // Turn Off Led
     }
     else {
@@ -145,11 +138,19 @@ void CheckSensor(){
   } 
 }
 
+/* Transmision()
+   This method sends a message to the host every time flagSlow becomes true. 
+   that flag depends of countSlow variable.
+   The message is simply: is there egg?, send "EGG OK"
+   Otherwise, send "NO EGG". 
+   Each message ends with a carriage return character and a newline character
+   (ASCII 13 or '\r', - ASCII 10, or '\n)
+*/
 void Transmision(){
   
   if(flagSlow == true)
   {
-     if (sensorState == LOW) {
+     if (sensorState == HIGH) {
        Serial.println("EGG OK");  // send text with Break line
      }
      else{
