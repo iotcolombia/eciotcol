@@ -154,6 +154,11 @@ void loop() {
     
     // Update Quantity Eggs Previous
     qtyEggsPrevious = qtyEggsActual;
+    
+    // Turn On/Off Led Indicator
+    digitalWrite(INDICATOR_LED, HIGH);
+    delay(100);
+    digitalWrite(INDICATOR_LED, LOW);
   }
 }
 
